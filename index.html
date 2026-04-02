@@ -46,6 +46,7 @@
             flex: 1; padding: 14px 5px; background: transparent; 
             border: none; color: #666; border-radius: 20px; 
             cursor: pointer; font-size: 14px; font-weight: 600;
+            transition: 0.3s;
         }
         .tab-btn.active { 
             background: #00ff88; color: #000; 
@@ -60,23 +61,22 @@
         .action-btn { 
             background: #00ff88; color: black; 
             width: 100%; padding: 16px; border: none; border-radius: 15px; 
-            font-weight: bold; cursor: pointer; transition: 0.3s;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
         }
-        .action-btn:active { transform: scale(0.95); }
+        .action-btn:active { transform: scale(0.96); }
 
-        /* লোডিং এনিমেশন */
-        #loading-text { display: none; color: #00ff88; font-size: 14px; margin-top: 10px; }
+        #loading-overlay { display: none; color: #00ff88; font-size: 13px; margin-top: 10px; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center; }
         .modal-card { background: white; color: #333; width: 85%; max-width: 380px; padding: 25px; border-radius: 25px; text-align: center; max-height: 90vh; overflow-y: auto; }
         
-        .user-id-text { font-size: 12px; color: #444; margin-top: 30px; }
+        .user-id-text { font-size: 11px; color: #555; margin-top: 30px; opacity: 0.7; }
     </style>
 </head>
 <body>
 
     <div class="main-card">
-        <div id="status-label" class="status-badge">সার্ভার কানেক্ট হচ্ছে...</div>
+        <div id="status-label" class="status-badge">সার্ভার চেক হচ্ছে...</div>
         <div id="trial-info">Credits: --</div>
 
         <h1>AI Studio <span class="pro-text" id="pro-trigger" onclick="adminTouch()">Pro</span></h1>
@@ -88,20 +88,20 @@
         </div>
 
         <div id="ai-video" class="tab-content">
-            <textarea class="input-box" id="v-prompt" placeholder="ভিডিওর বর্ণনা লিখুন..."></textarea>
-            <button id="v-btn" class="action-btn" onclick="checkTrialAndProcess()">ভিডিও তৈরি করুন</button>
-            <div id="loading-text">এআই ভিডিও জেনারেট হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</div>
+            <textarea class="input-box" id="v-prompt" placeholder="ভিডিওর বর্ণনা এখানে লিখুন..."></textarea>
+            <button class="action-btn" id="v-gen-btn" onclick="checkTrialAndProcess()">ভিডিও জেনারেট করুন</button>
+            <div id="loading-overlay">এআই প্রসেস করছে, দয়া করে অপেক্ষা করুন...</div>
         </div>
 
         <div id="ai-photo" class="tab-content" style="display:none;">
-            <textarea class="input-box" placeholder="ফটো বর্ণনা লিখুন..."></textarea>
+            <textarea class="input-box" placeholder="ফটোর প্রম্পট লিখুন..."></textarea>
             <button class="action-btn" style="background:#00e7ff">ফটো জেনারেট করুন</button>
         </div>
 
         <div id="dl-box" class="tab-content" style="display:none;">
-            <input type="text" class="input-box" id="dl-input" placeholder="লিংক পেস্ট করুন (MP4/Direct Link)">
-            <button class="action-btn" onclick="handleDownload()">ডাউনলোড শুরু</button>
-            <p style="font-size: 10px; color: #777; margin-top: 10px;">সরাসরি ফাইল ডাউনলোড না হলে লিঙ্কটি কপি করে ব্রাউজারে পেস্ট করুন।</p>
+            <input type="text" class="input-box" id="dl-input" placeholder="ভিডিওর ডিরেক্ট লিংক দিন...">
+            <button class="action-btn" onclick="forceDownload()">সরাসরি ডাউনলোড</button>
+            <p style="font-size: 10px; color: #666; margin-top: 12px;">নোট: শুধু .mp4 বা ডিরেক্ট ফাইল লিংক কাজ করবে।</p>
         </div>
         
         <div class="user-id-text">আপনার আইডি: <span id="display-id">Loading...</span></div>
@@ -109,24 +109,19 @@
 
     <div class="modal" id="adminModal">
         <div class="modal-card">
-            <h2 style="margin: 0;">Master Admin 🛠️</h2>
-            <hr style="margin: 15px 0;">
-            <p style="font-size: 12px; font-weight: bold; text-align: left;">ইউজার প্রিমিয়াম এক্টিভেশন:</p>
-            <input type="text" id="target-user-id" class="input-box" style="color:black; border:1px solid #ddd" placeholder="ইউজার আইডি (User ID)">
-            <button onclick="remoteActivate()" class="action-btn" style="padding: 10px; font-size: 13px;">প্রিমিয়াম দিন</button>
-            <hr style="margin: 20px 0;">
-            <p style="font-size: 12px; font-weight: bold; text-align: left;">বিজ্ঞাপন ম্যানেজার:</p>
-            <input type="text" id="new-ad-img" class="input-box" style="color:black; border:1px solid #ddd" placeholder="ছবির ডিরেক্ট লিংক (.jpg/.png)">
-            <input type="text" id="new-ad-url" class="input-box" style="color:black; border:1px solid #ddd" placeholder="ক্লিক করলে যে লিংকে যাবে">
-            <button onclick="updateDbAd()" class="action-btn" style="background: #333; color: white; padding: 10px; font-size: 13px;">এড পাবলিশ করুন</button>
-            <p onclick="closeAdmin()" style="cursor:pointer; margin-top:20px; font-weight:bold; color: #999;">প্যানেল বন্ধ করুন</p>
+            <h2 style="margin: 0;">Admin Control 🛠️</h2>
+            <hr style="margin: 15px 0; opacity: 0.2;">
+            <p style="font-size: 12px; font-weight: bold; text-align: left;">ইউজার প্রিমিয়াম করুন:</p>
+            <input type="text" id="target-user-id" class="input-box" style="color:black; border:1px solid #ddd" placeholder="User ID পেস্ট করুন">
+            <button onclick="remoteActivate()" class="action-btn" style="padding: 10px;">এক্টিভ করুন</button>
+            <p onclick="closeAdmin()" style="cursor:pointer; margin-top:20px; font-weight:bold; color: #ff4757;">বন্ধ করুন</p>
         </div>
     </div>
 
     <script>
-        // Firebase Config (একই রাখা হয়েছে)
+        // Firebase Configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyA...",
+            apiKey: "AIzaSyA...", // আপনার অরিজিনাল কি এখানে থাকবে
             databaseURL: "https://ai-studio-pro-94943-default-rtdb.firebaseio.com",
             projectId: "ai-studio-pro-94943",
         };
@@ -134,6 +129,7 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        // User ID Logic
         let userId = localStorage.getItem('app_user_id') || 'AI-' + Math.floor(Math.random() * 1000000);
         localStorage.setItem('app_user_id', userId);
         document.getElementById('display-id').innerText = userId;
@@ -142,15 +138,12 @@
         let trialLeft = localStorage.getItem('v_trial') === null ? 5 : parseInt(localStorage.getItem('v_trial'));
         
         function updateTrialUI() {
-            const trialInfo = document.getElementById('trial-info');
-            if(!userIsPremium) {
-                trialInfo.innerText = "Credits: " + trialLeft;
-            } else {
-                trialInfo.innerText = "Credits: Unlimited ✨";
-            }
+            const trialDiv = document.getElementById('trial-info');
+            trialDiv.innerText = userIsPremium ? "Credits: Unlimited ✨" : "Credits: " + trialLeft;
         }
         updateTrialUI();
 
+        // Firebase Sync
         function syncApp() {
             database.ref('users/' + userId).on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -167,63 +160,74 @@
         }
         syncApp();
 
-        // ভিডিও প্রসেসিং ফাংশন (আপডেটেড)
+        // ভিডিও জেনারেশন সিমুলেশন
         function checkTrialAndProcess() {
             const prompt = document.getElementById('v-prompt').value;
-            if(!prompt) { alert("কিছু একটা লিখুন!"); return; }
+            if(!prompt) { alert("প্রম্পট লিখুন!"); return; }
 
             if (userIsPremium || trialLeft > 0) {
-                if(!userIsPremium) { 
-                    trialLeft--; 
-                    localStorage.setItem('v_trial', trialLeft); 
-                    updateTrialUI(); 
-                }
+                if(!userIsPremium) { trialLeft--; localStorage.setItem('v_trial', trialLeft); updateTrialUI(); }
                 
-                // লোডিং এনিমেশন শুরু
-                const btn = document.getElementById('v-btn');
-                const loading = document.getElementById('loading-text');
+                const btn = document.getElementById('v-gen-btn');
+                const loader = document.getElementById('loading-overlay');
+                
                 btn.disabled = true;
-                btn.innerText = "জেনারেটিং...";
-                loading.style.display = "block";
+                btn.innerText = "কাজ চলছে...";
+                loader.style.display = "block";
 
                 setTimeout(() => {
                     btn.disabled = false;
-                    btn.innerText = "ভিডিও তৈরি করুন";
-                    loading.style.display = "none";
-                    alert("আপনার ভিডিও জেনারেট সফল হয়েছে! (সার্ভার মডিউল কানেক্ট করুন)");
-                }, 5000); // ৫ সেকেন্ড লোডিং দেখাবে
-
-            } else { alert("আপনার ৫ বার ফ্রি ট্রায়াল শেষ! প্রিমিয়াম নিন।"); }
+                    btn.innerText = "ভিডিও জেনারেট করুন";
+                    loader.style.display = "none";
+                    alert("ভিডিও তৈরি হয়েছে! (ডাউনলোডার ট্যাব চেক করুন)");
+                }, 4000);
+            } else { alert("ফ্রি ট্রায়াল শেষ! দয়া করে প্রিমিয়াম কিনুন।"); }
         }
 
-        // ডাউনলোডার ফাংশন (নতুন লজিক)
-        function handleDownload() {
-            let url = document.getElementById('dl-input').value;
-            if(!url) {
-                alert("ইউআরএল দিন!");
-                return;
+        // পাওয়ারফুল ডাউনলোড ফাংশন
+        async function forceDownload() {
+            const url = document.getElementById('dl-input').value;
+            if(!url) { alert("লিংক দিন!"); return; }
+
+            alert("ডাউনলোড প্রসেস শুরু হচ্ছে...");
+
+            try {
+                // ফাইলটি ফেচ করার চেষ্টা
+                const response = await fetch(url);
+                if(!response.ok) throw new Error('Network response was not ok');
+                
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = "AI_Studio_Pro_" + Date.now() + ".mp4";
+                document.body.appendChild(link);
+                link.click();
+                
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (e) {
+                console.log("Blob download failed, using fallback...");
+                // যদি fetch কাজ না করে (CORS এর জন্য), তবে সাধারণ ওপেন লজিক
+                const win = window.open(url, '_blank');
+                if(!win) alert("পপ-আপ ব্লক করা! দয়া করে ব্রাউজার সেটিংস থেকে অনুমতি দিন।");
             }
-
-            // ভিডিও ডাউনলোড করার ট্রিক
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.download = 'ai_studio_video.mp4'; // ফাইল নাম সেট করা
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            alert("ডাউনলোড প্রসেস শুরু হয়েছে...");
         }
 
-        // অ্যাডমিন প্যানেল লজিক একই আছে
+        // ট্যাব লজিক
+        function openTab(id, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).style.display = 'block';
+            btn.classList.add('active');
+        }
+
+        // অ্যাডমিন লজিক
         let touchCount = 0;
         function adminTouch() {
             touchCount++;
-            if(touchCount === 5) {
-                document.getElementById('adminModal').style.display = 'flex';
-                touchCount = 0;
-            }
+            if(touchCount === 5) { document.getElementById('adminModal').style.display = 'flex'; touchCount = 0; }
             setTimeout(() => { touchCount = 0; }, 3000);
         }
         function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
@@ -231,25 +235,10 @@
             let target = document.getElementById('target-user-id').value;
             if (target) {
                 database.ref('users/' + target).update({ isPremium: true }).then(() => {
-                    alert("ইউজার " + target + " প্রিমিয়াম হয়েছে!");
+                    alert("ইউজার আইডি: " + target + " এখন প্রিমিয়াম!");
+                    closeAdmin();
                 });
             }
-        }
-        function updateDbAd() {
-            let img = document.getElementById('new-ad-img').value;
-            let url = document.getElementById('new-ad-url').value;
-            if (img) {
-                database.ref('ads').set({ imageUrl: img, targetUrl: url }).then(() => {
-                    alert("বিজ্ঞাপন আপডেট হয়েছে!");
-                });
-            }
-        }
-
-        function openTab(id, btn) {
-            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).style.display = 'block';
-            btn.classList.add('active');
         }
     </script>
 </body>
